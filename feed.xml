@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+   <title>dynamicDispatch</title>
+   <subtitle>Random ObjC, Swift and Xcode fun</subtitle>
+   <link href="http://dynamicdispatch.io/feed.xml" rel="self"/>
+   <link href="http://dynamicdispatch.io/"/>
+   <updated>2017-07-08T15:52:10-07:00</updated>
+   <id>http://dynamicdispatch.io/</id>
+   <author>
+      <name>dynamicDispatch</name>
+   </author>
+   <icon>/img/logo.png</icon>
+   <category term="programming"/>
+   <category term="ios"/>
+   <category term="swift"/>
+   <category term="objective-c"/>
+   <category term="software"/>
+   <category term="mobile"/>
+
+   
+   <entry>
+      <title>Demangling Swift Names</title>
+      <subtitle></subtitle>
+      <link href="http://dynamicdispatch.io/blog/demangling-swift-names/" />
+      <id>http://dynamicdispatch.io/blog/demangling-swift-names</id>
+
+      <published>2017-07-06T00:00:00-07:00</published>
+      
+      <updated>2017-07-06T00:00:00-07:00</updated>
+      
+
+      <summary><p>When looking at stack traces, or disassembling code you end up with unreadable mangled Swift names like <code class="highlighter-rouge">_T023UITestInstrumentsUITestsAAC11testExampleyyF</code>. Xcode provides a tool to demangle these into the original type signature.</p>
+
+</summary>
+      <content type="html">&lt;p&gt;When looking at stack traces, or disassembling code you end up with unreadable mangled Swift names like &lt;code class=&quot;highlighter-rouge&quot;&gt;_T023UITestInstrumentsUITestsAAC11testExampleyyF&lt;/code&gt;. Xcode provides a tool to demangle these into the original type signature.&lt;/p&gt;
+
+&lt;!--excerpt--&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;xcrun swift-demangle _T023UITestInstrumentUITestsAAC11testExampleyyF
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;_T023UITestInstrumentUITestsAAC11testExampleyyF ---&amp;gt; UITestInstrumentUITests.UITestInstrumentUITests.testExample &lt;span class=&quot;o&quot;&gt;()&lt;/span&gt; -&amp;gt; &lt;span class=&quot;o&quot;&gt;()&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+</content>
+   </entry>
+   
+
+</feed>
