@@ -5,7 +5,7 @@
    <subtitle>Random ObjC, Swift and Xcode fun</subtitle>
    <link href="http://dynamicdispatch.io/feed.xml" rel="self"/>
    <link href="http://dynamicdispatch.io/"/>
-   <updated>2017-08-02T14:16:25-07:00</updated>
+   <updated>2017-08-17T10:33:25-07:00</updated>
    <id>http://dynamicdispatch.io/</id>
    <author>
       <name>dynamicDispatch</name>
@@ -18,6 +18,46 @@
    <category term="software"/>
    <category term="mobile"/>
 
+   
+   <entry>
+      <title>godbolt</title>
+      <subtitle></subtitle>
+      <link href="http://dynamicdispatch.io/blog/Godbolt/" />
+      <id>http://dynamicdispatch.io/blog/Godbolt</id>
+
+      <published>2017-08-17T00:00:00-07:00</published>
+      
+      <updated>2017-08-17T00:00:00-07:00</updated>
+      
+
+      <summary><p>The popular compiler explorer tool godbolt<sup id="fnref:godbolt"><a href="#fn:godbolt" class="footnote">1</a></sup> has added support for Swift language. Godbolt let’s you enter some code in a browser and shows the assembly output. It shows off the power of the LLVM optimization passes:</p>
+
+<div class="footnotes">
+  <ol>
+    <li id="fn:godbolt">
+      <p><a href="https://godbolt.org">godbolt.org</a>&nbsp;<a href="#fnref:godbolt" class="reversefootnote">&#8617;</a></p>
+    </li>
+  </ol>
+</div>
+</summary>
+      <content type="html">&lt;p&gt;The popular compiler explorer tool godbolt&lt;sup id=&quot;fnref:godbolt&quot;&gt;&lt;a href=&quot;#fn:godbolt&quot; class=&quot;footnote&quot;&gt;1&lt;/a&gt;&lt;/sup&gt; has added support for Swift language. Godbolt let’s you enter some code in a browser and shows the assembly output. It shows off the power of the LLVM optimization passes:&lt;/p&gt;
+
+&lt;!--excerpt--&gt;
+
+&lt;blockquote class=&quot;twitter-tweet&quot; data-lang=&quot;en&quot;&gt;&lt;p lang=&quot;en&quot; dir=&quot;ltr&quot;&gt;Check out how frickin&amp;#39; cool the optimizer is: &lt;a href=&quot;https://t.co/aUsDD9cNty&quot;&gt;pic.twitter.com/aUsDD9cNty&lt;/a&gt;&lt;/p&gt;&amp;mdash; David Smith (@Catfish_Man) &lt;a href=&quot;https://twitter.com/Catfish_Man/status/877995997846163456&quot;&gt;June 22, 2017&lt;/a&gt;&lt;/blockquote&gt;
+&lt;script async=&quot;&quot; src=&quot;//platform.twitter.com/widgets.js&quot; charset=&quot;utf-8&quot;&gt;&lt;/script&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/godbolt-swift.jpeg&quot; alt=&quot;godbolt&quot; /&gt;&lt;/p&gt;
+
+&lt;div class=&quot;footnotes&quot;&gt;
+  &lt;ol&gt;
+    &lt;li id=&quot;fn:godbolt&quot;&gt;
+      &lt;p&gt;&lt;a href=&quot;https://godbolt.org&quot;&gt;godbolt.org&lt;/a&gt;&amp;nbsp;&lt;a href=&quot;#fnref:godbolt&quot; class=&quot;reversefootnote&quot;&gt;&amp;#8617;&lt;/a&gt;&lt;/p&gt;
+    &lt;/li&gt;
+  &lt;/ol&gt;
+&lt;/div&gt;
+</content>
+   </entry>
    
    <entry>
       <title>withoutActuallyEscaping</title>
