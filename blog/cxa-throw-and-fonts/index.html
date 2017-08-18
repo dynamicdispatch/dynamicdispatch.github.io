@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta http-equiv="Cache-control" content="public">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="keywords" content="iOS, objective-c, swift, cocoa, apple, xcode, programming">
+    <meta name="description" content="Random ObjC, Swift and Xcode fun">
+    <meta name="author" content="dynamicDispatch">
+
+    <title>
+        
+            __cxa_throw and fonts &middot; dynamicDispatch
+        
+    </title>
+
+    <!-- Begin Jekyll SEO tag v2.2.3 -->
+<meta property="og:title" content="__cxa_throw and fonts" />
+<meta name="author" content="dynamicDispatch" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Sometimes when working in Xcode with the All Exceptions breakpoint turned on, when starting the app it pauses on the __cxa_throw symbol, but we can continue without crashing. This post will cover one of the common causes, missing font entitlements." />
+<meta property="og:description" content="Sometimes when working in Xcode with the All Exceptions breakpoint turned on, when starting the app it pauses on the __cxa_throw symbol, but we can continue without crashing. This post will cover one of the common causes, missing font entitlements." />
+<link rel="canonical" href="http://dynamicdispatch.io/blog/cxa-throw-and-fonts/" />
+<meta property="og:url" content="http://dynamicdispatch.io/blog/cxa-throw-and-fonts/" />
+<meta property="og:site_name" content="dynamicDispatch" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-08-18T00:00:00-07:00" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:site" content="@_danielbeard" />
+<meta name="twitter:creator" content="@_danielbeard" />
+<script type="application/ld+json">
+{"@context":"http://schema.org","@type":"BlogPosting","headline":"__cxa_throw and fonts","author":{"@type":"Person","name":"dynamicDispatch"},"datePublished":"2017-08-18T00:00:00-07:00","dateModified":"2017-08-18T00:00:00-07:00","description":"Sometimes when working in Xcode with the All Exceptions breakpoint turned on, when starting the app it pauses on the __cxa_throw symbol, but we can continue without crashing. This post will cover one of the common causes, missing font entitlements.","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"http://dynamicdispatch.io/img/logo.png"},"name":"dynamicDispatch"},"mainEntityOfPage":{"@type":"WebPage","@id":"http://dynamicdispatch.io/blog/cxa-throw-and-fonts/"},"url":"http://dynamicdispatch.io/blog/cxa-throw-and-fonts/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+    <meta name="twitter:image" content="/img/logo.png" />
+    <meta property="og:image" content="/img/logo.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+
+    <link href="/bower_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/bower_components/font-awesome/css/font-awesome.min.css" rel="stylesheet">
+    <link href="/bower_components/ubuntuMono/ubuntuMono.css" rel="stylesheet">
+    <link href="/css/syntax.css" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+    
+    <!--Title font-->
+    <link href="https://fonts.googleapis.com/css?family=PT+Serif|Spectral" rel="stylesheet">
+
+    <link rel="apple-touch-icon" sizes="76x76" href="/ico/icon76.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/ico/icon120.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/ico/icon152.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="/ico/icon167.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/ico/icon180.png">
+
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link type="application/atom+xml" rel="alternate" href="/feed.xml" title="dynamicDispatch" />
+
+    <script>
+         (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+         (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+         m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+         })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+         ga('create', 'UA-101184827-1', 'auto');
+         ga('send', 'pageview');
+    </script>
+</head>
+
+   <body>
+      
+<header class="container container-fluid">
+   <div class="row">
+      <div class="col-md-12 col-sm-12 col-xs-12">
+        <h1 class="text-center"><a href="/">dynamicDispatch</a></h1>
+        <div class="col-md-12 col-sm-12 col-xs-12">
+            <h2 class="tagline">Random Objective-C, Swift and Xcode fun</h2>
+         </div> 
+      </div> 
+   </div> 
+   <div class="row menu">
+      <div class="col-md-12 col-sm-12 col-xs-12">
+         <!--<a class="btn btn-default" href="/about/">About</a>-->
+      </div> 
+   </div> 
+   <hr>
+</header>
+
+      <div class="container container-fluid">
+         <div class="row">
+            <div class="col-sm-12 col-sm-offset-0 col-md-10 col-md-offset-1">
+               <article>
+   <h1 class="post-title"><a href="">__cxa_throw and fonts</a></h1>
+   <h2 class="post-subtitle"> <small class="post-date">18 Aug 2017</small></h2>
+   
+
+   <div class="post-content">
+      <p>Sometimes when working in Xcode with the <code class="highlighter-rouge">All Exceptions</code> breakpoint turned on, when starting the app it pauses on the <code class="highlighter-rouge">__cxa_throw</code> symbol, but we can continue without crashing. This post will cover one of the common causes, missing font entitlements.</p>
+
+<!--excerpt-->
+
+<hr />
+
+<p>When enabling Exception Breakpoints in Xcode, lldb adds two symbolic breakpoints, one for Objective-C and one for C++. Objective-C uses <code class="highlighter-rouge">objc_exception_throw</code>, C++ <code class="highlighter-rouge">__cxa_throw</code>. The reason we can resume from this breakpoint is that the exception is being caught by the caller of the function producing the exception.</p>
+
+<p>For uncaught exceptions, it’s much easier to figure out the failure: for C++ and Objective-C we can wrap the caller in a <code class="highlighter-rouge">try/catch</code> block. Additionally in Objective-C we can install an uncaught exception handler (this is how tools like crashlytics/fabric report exceptions) using <code class="highlighter-rouge">NSSetUncaughtExceptionHandler()</code><sup id="fnref:NSSetUncaughtExceptionHandler"><a href="#fn:NSSetUncaughtExceptionHandler" class="footnote">1</a></sup>, but because the exception we are looking at is caught by a system framework, there are some other approaches we can take.</p>
+
+<p>This is what the stacktrace looks like in Xcode:</p>
+
+<p><img src="/img/cxa_throw_stacktrace.png" alt="xcode_stacktrace" /></p>
+
+<p>Looking at <code class="highlighter-rouge">frame 5</code> in that stacktrace, we can see that the method takes a <code class="highlighter-rouge">char const*</code> value as the first parameter. This parameter represents the paths of the font being loaded. From this we should be able to figure out which font is causing us an issue.</p>
+
+<p>We can set a symbolic breakpoint on this function and print the path of the font being loaded. As we want to print the first argument, we need to print the value of a register. This can get complicated across architectures, on arm 32-bit devices this value is stored in the <code class="highlighter-rouge">$r0</code> register, arm64 is stored in <code class="highlighter-rouge">$x0</code>, on x86-64 it’s stored in <code class="highlighter-rouge">$rdi</code>. LLDB makes this easy by providing an alias to the first arguments register: <code class="highlighter-rouge">$arg1</code>. This is what our symbolic breakpoint looks like:</p>
+
+<p><img src="/img/tfont-symbolic-breakpoint.png" alt="tfont_symbolic_breakpoint" /></p>
+
+<p>After running with the symbolic breakpoint set, we get a number of font paths (some of them system level fonts):</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>"~/Library/Developer/CoreSimulator/Devices/B5565658-9D7B-4E6F-9E41-743869B5B28F/data/Containers/Bundle/Application/728FC5B7-A342-45ED-97B8-5992E0E8DA39/MyCoolApp.app/OpenSans-Light.ttf"
+"~/Library/Developer/CoreSimulator/Devices/B5565658-9D7B-4E6F-9E41-743869B5B28F/data/Containers/Bundle/Application/728FC5B7-A342-45ED-97B8-5992E0E8DA39/MyCoolApp.app/OpenSans-Regular.ttf"
+"~/Library/Developer/CoreSimulator/Devices/B5565658-9D7B-4E6F-9E41-743869B5B28F/data/Containers/Bundle/Application/728FC5B7-A342-45ED-97B8-5992E0E8DA39/MyCoolApp.app/OpenSans-Semibold.ttf"
+.... snip other open sans fonts (there are a lot) ...
+"~/Library/Developer/CoreSimulator/Devices/B5565658-9D7B-4E6F-9E41-743869B5B28F/data/Containers/Bundle/Application/1F016E2B-031B-4512-8DA2-52B6FEFDC878/MyCoolApp.app/Roboto-Bold.ttf"
+"~/Library/Developer/CoreSimulator/Devices/B5565658-9D7B-4E6F-9E41-743869B5B28F/data/Containers/Bundle/Application/728FC5B7-A342-45ED-97B8-5992E0E8DA39/MyCoolApp.app/MyCoolApp-v2.4.ttf"
+"/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Fonts/CoreUI/SFUIText.ttf"
+"/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Fonts/CoreUI/SFUIDisplay.ttf"
+</code></pre>
+</div>
+
+<p>Cross checking these against the <code class="highlighter-rouge">UIAppFonts</code> we register in our <code class="highlighter-rouge">Info.plist</code> file:</p>
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="cp">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span>
+<span class="cp">&lt;!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"&gt;</span>
+<span class="nt">&lt;plist</span> <span class="na">version=</span><span class="s">"1.0"</span><span class="nt">&gt;</span>
+<span class="nt">&lt;array&gt;</span>
+	<span class="nt">&lt;string&gt;</span>MyCoolApp-v2.4.ttf<span class="nt">&lt;/string&gt;</span>
+	<span class="nt">&lt;string&gt;</span>OpenSans-Light.ttf<span class="nt">&lt;/string&gt;</span>
+	<span class="nt">&lt;string&gt;</span>OpenSans-Regular.ttf<span class="nt">&lt;/string&gt;</span>
+	<span class="nt">&lt;string&gt;</span>OpenSans-Semibold.ttf<span class="nt">&lt;/string&gt;</span>
+	<span class="nt">&lt;string&gt;</span>OpenSans-Bold.ttf<span class="nt">&lt;/string&gt;</span>
+	<span class="nt">&lt;string&gt;</span>OpenSans-ExtraBold.ttf<span class="nt">&lt;/string&gt;</span>
+	<span class="nt">&lt;string&gt;</span>OpenSans-Italic.ttf<span class="nt">&lt;/string&gt;</span>
+	<span class="nt">&lt;string&gt;</span>OpenSans-LightItalic.ttf<span class="nt">&lt;/string&gt;</span>
+	<span class="nt">&lt;string&gt;</span>OpenSans-SemiboldItalic.ttf<span class="nt">&lt;/string&gt;</span>
+	<span class="nt">&lt;string&gt;</span>OpenSans-BoldItalic.ttf<span class="nt">&lt;/string&gt;</span>
+	<span class="nt">&lt;string&gt;</span>OpenSans-ExtraBoldItalic.ttf<span class="nt">&lt;/string&gt;</span>
+	<span class="nt">&lt;string&gt;</span>Calibre-Black.otf<span class="nt">&lt;/string&gt;</span>
+	<span class="nt">&lt;string&gt;</span>Calibre-Semibold.otf<span class="nt">&lt;/string&gt;</span>
+<span class="nt">&lt;/array&gt;</span>
+<span class="nt">&lt;/plist&gt;</span>
+</code></pre>
+</div>
+
+<p>Hmmm, the Roboto font isn’t registered in there. Roboto is an Android font, we probably don’t want it in our iOS project. So we have to find out where this is being referenced from. Searching through code gives us no results, so this is probably specified in a <code class="highlighter-rouge">xib</code> or <code class="highlighter-rouge">storyboard</code>. We can find the usage using <code class="highlighter-rouge">ack</code>:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ ack --type-set xib:ext:xib,storyboard --type=xib Roboto
+</code></pre>
+</div>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>Classes/LoginController.xib
+14:        &lt;array key="Roboto-Bold.ttf"&gt;
+15:            &lt;string&gt;Roboto-Bold&lt;/string&gt;
+47:                    &lt;fontDescription key="fontDescription" name="Roboto-Bold" family="Roboto" pointSize="10"/&gt;
+61:                    &lt;fontDescription key="fontDescription" name="Roboto-Bold" family="Roboto" pointSize="14"/&gt;
+</code></pre>
+</div>
+
+<p>Aha! Once removing from the xib file and replacing with a font we <em>do</em> register for, the caught exception goes away and we are once again able to have our exception breakpoint set without interfering with our app start up.</p>
+
+<div class="footnotes">
+  <ol>
+    <li id="fn:NSSetUncaughtExceptionHandler">
+      <p><a href="https://developer.apple.com/documentation/foundation/1409609-nssetuncaughtexceptionhandler?preferredLanguage=occ">https://developer.apple.com/documentation/foundation/1409609-nssetuncaughtexceptionhandler?preferredLanguage=occ</a>&nbsp;<a href="#fnref:NSSetUncaughtExceptionHandler" class="reversefootnote">&#8617;</a></p>
+    </li>
+  </ol>
+</div>
+
+   </div> 
+</article>
+
+
+<div class="post-share-subscribe">
+   <div class="row">
+      <div class="col-md-6 col-sm-6 col-xs-12 center">
+         <div class="btn-group btn-group-justified" role="group">
+
+            <div class="btn-group dropup" role="group">
+               <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  Share &nbsp;<i class="fa fa-share-alt" aria-hidden="true"></i>
+               </button>
+               <ul class="dropdown-menu">
+                  <li>
+                     <a href="https://twitter.com/intent/tweet?text=__cxa_throw%20and%20fonts%20http://dynamicdispatch.io/blog/cxa-throw-and-fonts/%20via%20@_danielbeard" title="Tweet" target="_blank">
+                     Twitter &nbsp;<i class="fa fa-twitter" aria-hidden="true"></i>
+                     </a>
+                  </li>
+                  <li>
+                     <a href="https://www.facebook.com/sharer.php?u=http://dynamicdispatch.io/blog/cxa-throw-and-fonts/" title="Post" target="_blank">
+                     Facebook &nbsp;<i class="fa fa-facebook" aria-hidden="true"></i>
+                     </a>
+                  </li>
+                  <li>
+                     <a href="https://plus.google.com/share?url=http://dynamicdispatch.io/blog/cxa-throw-and-fonts/" title="Share" target="_blank">
+                     Google &nbsp;<i class="fa fa-google-plus" aria-hidden="true"></i>
+                     </a>
+                  </li>
+               </ul>
+            </div> <!-- share dropup -->
+
+            <div class="btn-group dropup" role="group">
+               <button class="btn btn-default dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  Subscribe &nbsp;<i class="fa fa-rss" aria-hidden="true"></i>
+               </button>
+               <ul class="dropdown-menu">
+                  <li><a href="/feed.xml" title="Subscribe via RSS/atom">RSS/Atom &nbsp;<i class="fa fa-rss" aria-hidden="true"></i></a></li>
+               </ul>
+            </div> <!-- subscribe drop-up -->
+         </div> <!-- btn-group -->
+      </div> <!-- col -->
+   </div> <!-- row -->
+</div> <!-- post-share-subscribe -->
+
+
+            </div> 
+         </div> 
+      </div> 
+      
+<footer class="container container-fluid">
+   <hr>
+
+   <div class="row contact">
+    <div class="col-sm-12 col-sm-offset-0 col-md-8 col-md-offset-2">
+        <ul class="inline center">
+            <li><a href="https://github.com/dynamicdispatch" title="Follow me on Github"><i class="fa fa-2x fa-github" aria-hidden="true"></i></a></li>
+            <li><a href="https://twitter.com/_danielbeard" title="Follow me on Twitter"><i class="fa fa-2x fa-twitter" aria-hidden="true"></i></a></li>
+            <li><a href="/feed.xml" title="Subscribe via RSS/atom"><i class="fa fa-2x fa-rss-square" aria-hidden="true"></i></a></li>
+        </ul>
+    </div> <!-- col -->
+</div> <!-- row -->
+
+
+   <p class="text-muted text-center"><small>
+   &copy; 2017 
+   </small></p>
+</footer>
+
+      
+<script src="/bower_components/jquery/dist/jquery.min.js"></script>
+<script src="/bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+
+   </body>
+</html>

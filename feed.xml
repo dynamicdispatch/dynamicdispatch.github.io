@@ -5,7 +5,7 @@
    <subtitle>Random ObjC, Swift and Xcode fun</subtitle>
    <link href="http://dynamicdispatch.io/feed.xml" rel="self"/>
    <link href="http://dynamicdispatch.io/"/>
-   <updated>2017-08-17T10:33:25-07:00</updated>
+   <updated>2017-08-18T11:40:25-07:00</updated>
    <id>http://dynamicdispatch.io/</id>
    <author>
       <name>dynamicDispatch</name>
@@ -18,6 +18,102 @@
    <category term="software"/>
    <category term="mobile"/>
 
+   
+   <entry>
+      <title>__cxa_throw and fonts</title>
+      <subtitle></subtitle>
+      <link href="http://dynamicdispatch.io/blog/cxa-throw-and-fonts/" />
+      <id>http://dynamicdispatch.io/blog/cxa-throw-and-fonts</id>
+
+      <published>2017-08-18T00:00:00-07:00</published>
+      
+      <updated>2017-08-18T00:00:00-07:00</updated>
+      
+
+      <summary><p>Sometimes when working in Xcode with the <code class="highlighter-rouge">All Exceptions</code> breakpoint turned on, when starting the app it pauses on the <code class="highlighter-rouge">__cxa_throw</code> symbol, but we can continue without crashing. This post will cover one of the common causes, missing font entitlements.</p>
+
+</summary>
+      <content type="html">&lt;p&gt;Sometimes when working in Xcode with the &lt;code class=&quot;highlighter-rouge&quot;&gt;All Exceptions&lt;/code&gt; breakpoint turned on, when starting the app it pauses on the &lt;code class=&quot;highlighter-rouge&quot;&gt;__cxa_throw&lt;/code&gt; symbol, but we can continue without crashing. This post will cover one of the common causes, missing font entitlements.&lt;/p&gt;
+
+&lt;!--excerpt--&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;When enabling Exception Breakpoints in Xcode, lldb adds two symbolic breakpoints, one for Objective-C and one for C++. Objective-C uses &lt;code class=&quot;highlighter-rouge&quot;&gt;objc_exception_throw&lt;/code&gt;, C++ &lt;code class=&quot;highlighter-rouge&quot;&gt;__cxa_throw&lt;/code&gt;. The reason we can resume from this breakpoint is that the exception is being caught by the caller of the function producing the exception.&lt;/p&gt;
+
+&lt;p&gt;For uncaught exceptions, it’s much easier to figure out the failure: for C++ and Objective-C we can wrap the caller in a &lt;code class=&quot;highlighter-rouge&quot;&gt;try/catch&lt;/code&gt; block. Additionally in Objective-C we can install an uncaught exception handler (this is how tools like crashlytics/fabric report exceptions) using &lt;code class=&quot;highlighter-rouge&quot;&gt;NSSetUncaughtExceptionHandler()&lt;/code&gt;&lt;sup id=&quot;fnref:NSSetUncaughtExceptionHandler&quot;&gt;&lt;a href=&quot;#fn:NSSetUncaughtExceptionHandler&quot; class=&quot;footnote&quot;&gt;1&lt;/a&gt;&lt;/sup&gt;, but because the exception we are looking at is caught by a system framework, there are some other approaches we can take.&lt;/p&gt;
+
+&lt;p&gt;This is what the stacktrace looks like in Xcode:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/cxa_throw_stacktrace.png&quot; alt=&quot;xcode_stacktrace&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Looking at &lt;code class=&quot;highlighter-rouge&quot;&gt;frame 5&lt;/code&gt; in that stacktrace, we can see that the method takes a &lt;code class=&quot;highlighter-rouge&quot;&gt;char const*&lt;/code&gt; value as the first parameter. This parameter represents the paths of the font being loaded. From this we should be able to figure out which font is causing us an issue.&lt;/p&gt;
+
+&lt;p&gt;We can set a symbolic breakpoint on this function and print the path of the font being loaded. As we want to print the first argument, we need to print the value of a register. This can get complicated across architectures, on arm 32-bit devices this value is stored in the &lt;code class=&quot;highlighter-rouge&quot;&gt;$r0&lt;/code&gt; register, arm64 is stored in &lt;code class=&quot;highlighter-rouge&quot;&gt;$x0&lt;/code&gt;, on x86-64 it’s stored in &lt;code class=&quot;highlighter-rouge&quot;&gt;$rdi&lt;/code&gt;. LLDB makes this easy by providing an alias to the first arguments register: &lt;code class=&quot;highlighter-rouge&quot;&gt;$arg1&lt;/code&gt;. This is what our symbolic breakpoint looks like:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/tfont-symbolic-breakpoint.png&quot; alt=&quot;tfont_symbolic_breakpoint&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;After running with the symbolic breakpoint set, we get a number of font paths (some of them system level fonts):&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&quot;~/Library/Developer/CoreSimulator/Devices/B5565658-9D7B-4E6F-9E41-743869B5B28F/data/Containers/Bundle/Application/728FC5B7-A342-45ED-97B8-5992E0E8DA39/MyCoolApp.app/OpenSans-Light.ttf&quot;
+&quot;~/Library/Developer/CoreSimulator/Devices/B5565658-9D7B-4E6F-9E41-743869B5B28F/data/Containers/Bundle/Application/728FC5B7-A342-45ED-97B8-5992E0E8DA39/MyCoolApp.app/OpenSans-Regular.ttf&quot;
+&quot;~/Library/Developer/CoreSimulator/Devices/B5565658-9D7B-4E6F-9E41-743869B5B28F/data/Containers/Bundle/Application/728FC5B7-A342-45ED-97B8-5992E0E8DA39/MyCoolApp.app/OpenSans-Semibold.ttf&quot;
+.... snip other open sans fonts (there are a lot) ...
+&quot;~/Library/Developer/CoreSimulator/Devices/B5565658-9D7B-4E6F-9E41-743869B5B28F/data/Containers/Bundle/Application/1F016E2B-031B-4512-8DA2-52B6FEFDC878/MyCoolApp.app/Roboto-Bold.ttf&quot;
+&quot;~/Library/Developer/CoreSimulator/Devices/B5565658-9D7B-4E6F-9E41-743869B5B28F/data/Containers/Bundle/Application/728FC5B7-A342-45ED-97B8-5992E0E8DA39/MyCoolApp.app/MyCoolApp-v2.4.ttf&quot;
+&quot;/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Fonts/CoreUI/SFUIText.ttf&quot;
+&quot;/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Fonts/CoreUI/SFUIDisplay.ttf&quot;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Cross checking these against the &lt;code class=&quot;highlighter-rouge&quot;&gt;UIAppFonts&lt;/code&gt; we register in our &lt;code class=&quot;highlighter-rouge&quot;&gt;Info.plist&lt;/code&gt; file:&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;&amp;lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;cp&quot;&gt;&amp;lt;!DOCTYPE plist PUBLIC &quot;-//Apple//DTD PLIST 1.0//EN&quot; &quot;http://www.apple.com/DTDs/PropertyList-1.0.dtd&quot;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;plist&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;version=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;1.0&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;array&amp;gt;&lt;/span&gt;
+	&lt;span class=&quot;nt&quot;&gt;&amp;lt;string&amp;gt;&lt;/span&gt;MyCoolApp-v2.4.ttf&lt;span class=&quot;nt&quot;&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
+	&lt;span class=&quot;nt&quot;&gt;&amp;lt;string&amp;gt;&lt;/span&gt;OpenSans-Light.ttf&lt;span class=&quot;nt&quot;&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
+	&lt;span class=&quot;nt&quot;&gt;&amp;lt;string&amp;gt;&lt;/span&gt;OpenSans-Regular.ttf&lt;span class=&quot;nt&quot;&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
+	&lt;span class=&quot;nt&quot;&gt;&amp;lt;string&amp;gt;&lt;/span&gt;OpenSans-Semibold.ttf&lt;span class=&quot;nt&quot;&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
+	&lt;span class=&quot;nt&quot;&gt;&amp;lt;string&amp;gt;&lt;/span&gt;OpenSans-Bold.ttf&lt;span class=&quot;nt&quot;&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
+	&lt;span class=&quot;nt&quot;&gt;&amp;lt;string&amp;gt;&lt;/span&gt;OpenSans-ExtraBold.ttf&lt;span class=&quot;nt&quot;&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
+	&lt;span class=&quot;nt&quot;&gt;&amp;lt;string&amp;gt;&lt;/span&gt;OpenSans-Italic.ttf&lt;span class=&quot;nt&quot;&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
+	&lt;span class=&quot;nt&quot;&gt;&amp;lt;string&amp;gt;&lt;/span&gt;OpenSans-LightItalic.ttf&lt;span class=&quot;nt&quot;&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
+	&lt;span class=&quot;nt&quot;&gt;&amp;lt;string&amp;gt;&lt;/span&gt;OpenSans-SemiboldItalic.ttf&lt;span class=&quot;nt&quot;&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
+	&lt;span class=&quot;nt&quot;&gt;&amp;lt;string&amp;gt;&lt;/span&gt;OpenSans-BoldItalic.ttf&lt;span class=&quot;nt&quot;&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
+	&lt;span class=&quot;nt&quot;&gt;&amp;lt;string&amp;gt;&lt;/span&gt;OpenSans-ExtraBoldItalic.ttf&lt;span class=&quot;nt&quot;&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
+	&lt;span class=&quot;nt&quot;&gt;&amp;lt;string&amp;gt;&lt;/span&gt;Calibre-Black.otf&lt;span class=&quot;nt&quot;&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
+	&lt;span class=&quot;nt&quot;&gt;&amp;lt;string&amp;gt;&lt;/span&gt;Calibre-Semibold.otf&lt;span class=&quot;nt&quot;&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/array&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/plist&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Hmmm, the Roboto font isn’t registered in there. Roboto is an Android font, we probably don’t want it in our iOS project. So we have to find out where this is being referenced from. Searching through code gives us no results, so this is probably specified in a &lt;code class=&quot;highlighter-rouge&quot;&gt;xib&lt;/code&gt; or &lt;code class=&quot;highlighter-rouge&quot;&gt;storyboard&lt;/code&gt;. We can find the usage using &lt;code class=&quot;highlighter-rouge&quot;&gt;ack&lt;/code&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ ack --type-set xib:ext:xib,storyboard --type=xib Roboto
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Classes/LoginController.xib
+14:        &amp;lt;array key=&quot;Roboto-Bold.ttf&quot;&amp;gt;
+15:            &amp;lt;string&amp;gt;Roboto-Bold&amp;lt;/string&amp;gt;
+47:                    &amp;lt;fontDescription key=&quot;fontDescription&quot; name=&quot;Roboto-Bold&quot; family=&quot;Roboto&quot; pointSize=&quot;10&quot;/&amp;gt;
+61:                    &amp;lt;fontDescription key=&quot;fontDescription&quot; name=&quot;Roboto-Bold&quot; family=&quot;Roboto&quot; pointSize=&quot;14&quot;/&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Aha! Once removing from the xib file and replacing with a font we &lt;em&gt;do&lt;/em&gt; register for, the caught exception goes away and we are once again able to have our exception breakpoint set without interfering with our app start up.&lt;/p&gt;
+
+&lt;div class=&quot;footnotes&quot;&gt;
+  &lt;ol&gt;
+    &lt;li id=&quot;fn:NSSetUncaughtExceptionHandler&quot;&gt;
+      &lt;p&gt;&lt;a href=&quot;https://developer.apple.com/documentation/foundation/1409609-nssetuncaughtexceptionhandler?preferredLanguage=occ&quot;&gt;https://developer.apple.com/documentation/foundation/1409609-nssetuncaughtexceptionhandler?preferredLanguage=occ&lt;/a&gt;&amp;nbsp;&lt;a href=&quot;#fnref:NSSetUncaughtExceptionHandler&quot; class=&quot;reversefootnote&quot;&gt;&amp;#8617;&lt;/a&gt;&lt;/p&gt;
+    &lt;/li&gt;
+  &lt;/ol&gt;
+&lt;/div&gt;
+</content>
+   </entry>
    
    <entry>
       <title>godbolt</title>
