@@ -5,7 +5,7 @@
    <subtitle>Random ObjC, Swift and Xcode fun</subtitle>
    <link href="http://dynamicdispatch.io/feed.xml" rel="self"/>
    <link href="http://dynamicdispatch.io/"/>
-   <updated>2017-08-18T11:40:25-07:00</updated>
+   <updated>2017-09-08T13:38:38-07:00</updated>
    <id>http://dynamicdispatch.io/</id>
    <author>
       <name>dynamicDispatch</name>
@@ -30,89 +30,10 @@
       <updated>2017-08-18T00:00:00-07:00</updated>
       
 
-      <summary><p>Sometimes when working in Xcode with the <code class="highlighter-rouge">All Exceptions</code> breakpoint turned on, when starting the app it pauses on the <code class="highlighter-rouge">__cxa_throw</code> symbol, but we can continue without crashing. This post will cover one of the common causes, missing font entitlements.</p>
+      <summary>&lt;p&gt;Sometimes when working in Xcode with the &lt;code class=&quot;highlighter-rouge&quot;&gt;All Exceptions&lt;/code&gt; breakpoint turned on, when starting the app it pauses on the &lt;code class=&quot;highlighter-rouge&quot;&gt;__cxa_throw&lt;/code&gt; symbol, but we can continue without crashing. This post will cover one of the common causes, missing font entitlements.&lt;/p&gt;
 
 </summary>
-      <content type="html">&lt;p&gt;Sometimes when working in Xcode with the &lt;code class=&quot;highlighter-rouge&quot;&gt;All Exceptions&lt;/code&gt; breakpoint turned on, when starting the app it pauses on the &lt;code class=&quot;highlighter-rouge&quot;&gt;__cxa_throw&lt;/code&gt; symbol, but we can continue without crashing. This post will cover one of the common causes, missing font entitlements.&lt;/p&gt;
-
-&lt;!--excerpt--&gt;
-
-&lt;hr /&gt;
-
-&lt;p&gt;When enabling Exception Breakpoints in Xcode, lldb adds two symbolic breakpoints, one for Objective-C and one for C++. Objective-C uses &lt;code class=&quot;highlighter-rouge&quot;&gt;objc_exception_throw&lt;/code&gt;, C++ &lt;code class=&quot;highlighter-rouge&quot;&gt;__cxa_throw&lt;/code&gt;. The reason we can resume from this breakpoint is that the exception is being caught by the caller of the function producing the exception.&lt;/p&gt;
-
-&lt;p&gt;For uncaught exceptions, it’s much easier to figure out the failure: for C++ and Objective-C we can wrap the caller in a &lt;code class=&quot;highlighter-rouge&quot;&gt;try/catch&lt;/code&gt; block. Additionally in Objective-C we can install an uncaught exception handler (this is how tools like crashlytics/fabric report exceptions) using &lt;code class=&quot;highlighter-rouge&quot;&gt;NSSetUncaughtExceptionHandler()&lt;/code&gt;&lt;sup id=&quot;fnref:NSSetUncaughtExceptionHandler&quot;&gt;&lt;a href=&quot;#fn:NSSetUncaughtExceptionHandler&quot; class=&quot;footnote&quot;&gt;1&lt;/a&gt;&lt;/sup&gt;, but because the exception we are looking at is caught by a system framework, there are some other approaches we can take.&lt;/p&gt;
-
-&lt;p&gt;This is what the stacktrace looks like in Xcode:&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;/img/cxa_throw_stacktrace.png&quot; alt=&quot;xcode_stacktrace&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;Looking at &lt;code class=&quot;highlighter-rouge&quot;&gt;frame 5&lt;/code&gt; in that stacktrace, we can see that the method takes a &lt;code class=&quot;highlighter-rouge&quot;&gt;char const*&lt;/code&gt; value as the first parameter. This parameter represents the paths of the font being loaded. From this we should be able to figure out which font is causing us an issue.&lt;/p&gt;
-
-&lt;p&gt;We can set a symbolic breakpoint on this function and print the path of the font being loaded. As we want to print the first argument, we need to print the value of a register. This can get complicated across architectures, on arm 32-bit devices this value is stored in the &lt;code class=&quot;highlighter-rouge&quot;&gt;$r0&lt;/code&gt; register, arm64 is stored in &lt;code class=&quot;highlighter-rouge&quot;&gt;$x0&lt;/code&gt;, on x86-64 it’s stored in &lt;code class=&quot;highlighter-rouge&quot;&gt;$rdi&lt;/code&gt;. LLDB makes this easy by providing an alias to the first arguments register: &lt;code class=&quot;highlighter-rouge&quot;&gt;$arg1&lt;/code&gt;. This is what our symbolic breakpoint looks like:&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;/img/tfont-symbolic-breakpoint.png&quot; alt=&quot;tfont_symbolic_breakpoint&quot; /&gt;&lt;/p&gt;
-
-&lt;p&gt;After running with the symbolic breakpoint set, we get a number of font paths (some of them system level fonts):&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&quot;~/Library/Developer/CoreSimulator/Devices/B5565658-9D7B-4E6F-9E41-743869B5B28F/data/Containers/Bundle/Application/728FC5B7-A342-45ED-97B8-5992E0E8DA39/MyCoolApp.app/OpenSans-Light.ttf&quot;
-&quot;~/Library/Developer/CoreSimulator/Devices/B5565658-9D7B-4E6F-9E41-743869B5B28F/data/Containers/Bundle/Application/728FC5B7-A342-45ED-97B8-5992E0E8DA39/MyCoolApp.app/OpenSans-Regular.ttf&quot;
-&quot;~/Library/Developer/CoreSimulator/Devices/B5565658-9D7B-4E6F-9E41-743869B5B28F/data/Containers/Bundle/Application/728FC5B7-A342-45ED-97B8-5992E0E8DA39/MyCoolApp.app/OpenSans-Semibold.ttf&quot;
-.... snip other open sans fonts (there are a lot) ...
-&quot;~/Library/Developer/CoreSimulator/Devices/B5565658-9D7B-4E6F-9E41-743869B5B28F/data/Containers/Bundle/Application/1F016E2B-031B-4512-8DA2-52B6FEFDC878/MyCoolApp.app/Roboto-Bold.ttf&quot;
-&quot;~/Library/Developer/CoreSimulator/Devices/B5565658-9D7B-4E6F-9E41-743869B5B28F/data/Containers/Bundle/Application/728FC5B7-A342-45ED-97B8-5992E0E8DA39/MyCoolApp.app/MyCoolApp-v2.4.ttf&quot;
-&quot;/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Fonts/CoreUI/SFUIText.ttf&quot;
-&quot;/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk/System/Library/Fonts/CoreUI/SFUIDisplay.ttf&quot;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;Cross checking these against the &lt;code class=&quot;highlighter-rouge&quot;&gt;UIAppFonts&lt;/code&gt; we register in our &lt;code class=&quot;highlighter-rouge&quot;&gt;Info.plist&lt;/code&gt; file:&lt;/p&gt;
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;&amp;lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;cp&quot;&gt;&amp;lt;!DOCTYPE plist PUBLIC &quot;-//Apple//DTD PLIST 1.0//EN&quot; &quot;http://www.apple.com/DTDs/PropertyList-1.0.dtd&quot;&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;&amp;lt;plist&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;version=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;1.0&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;&amp;lt;array&amp;gt;&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;&amp;lt;string&amp;gt;&lt;/span&gt;MyCoolApp-v2.4.ttf&lt;span class=&quot;nt&quot;&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;&amp;lt;string&amp;gt;&lt;/span&gt;OpenSans-Light.ttf&lt;span class=&quot;nt&quot;&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;&amp;lt;string&amp;gt;&lt;/span&gt;OpenSans-Regular.ttf&lt;span class=&quot;nt&quot;&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;&amp;lt;string&amp;gt;&lt;/span&gt;OpenSans-Semibold.ttf&lt;span class=&quot;nt&quot;&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;&amp;lt;string&amp;gt;&lt;/span&gt;OpenSans-Bold.ttf&lt;span class=&quot;nt&quot;&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;&amp;lt;string&amp;gt;&lt;/span&gt;OpenSans-ExtraBold.ttf&lt;span class=&quot;nt&quot;&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;&amp;lt;string&amp;gt;&lt;/span&gt;OpenSans-Italic.ttf&lt;span class=&quot;nt&quot;&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;&amp;lt;string&amp;gt;&lt;/span&gt;OpenSans-LightItalic.ttf&lt;span class=&quot;nt&quot;&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;&amp;lt;string&amp;gt;&lt;/span&gt;OpenSans-SemiboldItalic.ttf&lt;span class=&quot;nt&quot;&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;&amp;lt;string&amp;gt;&lt;/span&gt;OpenSans-BoldItalic.ttf&lt;span class=&quot;nt&quot;&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;&amp;lt;string&amp;gt;&lt;/span&gt;OpenSans-ExtraBoldItalic.ttf&lt;span class=&quot;nt&quot;&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;&amp;lt;string&amp;gt;&lt;/span&gt;Calibre-Black.otf&lt;span class=&quot;nt&quot;&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
-	&lt;span class=&quot;nt&quot;&gt;&amp;lt;string&amp;gt;&lt;/span&gt;Calibre-Semibold.otf&lt;span class=&quot;nt&quot;&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;&amp;lt;/array&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;nt&quot;&gt;&amp;lt;/plist&amp;gt;&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;Hmmm, the Roboto font isn’t registered in there. Roboto is an Android font, we probably don’t want it in our iOS project. So we have to find out where this is being referenced from. Searching through code gives us no results, so this is probably specified in a &lt;code class=&quot;highlighter-rouge&quot;&gt;xib&lt;/code&gt; or &lt;code class=&quot;highlighter-rouge&quot;&gt;storyboard&lt;/code&gt;. We can find the usage using &lt;code class=&quot;highlighter-rouge&quot;&gt;ack&lt;/code&gt;:&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ ack --type-set xib:ext:xib,storyboard --type=xib Roboto
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Classes/LoginController.xib
-14:        &amp;lt;array key=&quot;Roboto-Bold.ttf&quot;&amp;gt;
-15:            &amp;lt;string&amp;gt;Roboto-Bold&amp;lt;/string&amp;gt;
-47:                    &amp;lt;fontDescription key=&quot;fontDescription&quot; name=&quot;Roboto-Bold&quot; family=&quot;Roboto&quot; pointSize=&quot;10&quot;/&amp;gt;
-61:                    &amp;lt;fontDescription key=&quot;fontDescription&quot; name=&quot;Roboto-Bold&quot; family=&quot;Roboto&quot; pointSize=&quot;14&quot;/&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;Aha! Once removing from the xib file and replacing with a font we &lt;em&gt;do&lt;/em&gt; register for, the caught exception goes away and we are once again able to have our exception breakpoint set without interfering with our app start up.&lt;/p&gt;
-
-&lt;div class=&quot;footnotes&quot;&gt;
-  &lt;ol&gt;
-    &lt;li id=&quot;fn:NSSetUncaughtExceptionHandler&quot;&gt;
-      &lt;p&gt;&lt;a href=&quot;https://developer.apple.com/documentation/foundation/1409609-nssetuncaughtexceptionhandler?preferredLanguage=occ&quot;&gt;https://developer.apple.com/documentation/foundation/1409609-nssetuncaughtexceptionhandler?preferredLanguage=occ&lt;/a&gt;&amp;nbsp;&lt;a href=&quot;#fnref:NSSetUncaughtExceptionHandler&quot; class=&quot;reversefootnote&quot;&gt;&amp;#8617;&lt;/a&gt;&lt;/p&gt;
-    &lt;/li&gt;
-  &lt;/ol&gt;
-&lt;/div&gt;
-</content>
+      <content type="html"></content>
    </entry>
    
    <entry>
@@ -126,24 +47,7 @@
       <updated>2017-08-17T00:00:00-07:00</updated>
       
 
-      <summary><p>The popular compiler explorer tool godbolt<sup id="fnref:godbolt"><a href="#fn:godbolt" class="footnote">1</a></sup> has added support for Swift language. Godbolt let’s you enter some code in a browser and shows the assembly output. It shows off the power of the LLVM optimization passes:</p>
-
-<div class="footnotes">
-  <ol>
-    <li id="fn:godbolt">
-      <p><a href="https://godbolt.org">godbolt.org</a>&nbsp;<a href="#fnref:godbolt" class="reversefootnote">&#8617;</a></p>
-    </li>
-  </ol>
-</div>
-</summary>
-      <content type="html">&lt;p&gt;The popular compiler explorer tool godbolt&lt;sup id=&quot;fnref:godbolt&quot;&gt;&lt;a href=&quot;#fn:godbolt&quot; class=&quot;footnote&quot;&gt;1&lt;/a&gt;&lt;/sup&gt; has added support for Swift language. Godbolt let’s you enter some code in a browser and shows the assembly output. It shows off the power of the LLVM optimization passes:&lt;/p&gt;
-
-&lt;!--excerpt--&gt;
-
-&lt;blockquote class=&quot;twitter-tweet&quot; data-lang=&quot;en&quot;&gt;&lt;p lang=&quot;en&quot; dir=&quot;ltr&quot;&gt;Check out how frickin&amp;#39; cool the optimizer is: &lt;a href=&quot;https://t.co/aUsDD9cNty&quot;&gt;pic.twitter.com/aUsDD9cNty&lt;/a&gt;&lt;/p&gt;&amp;mdash; David Smith (@Catfish_Man) &lt;a href=&quot;https://twitter.com/Catfish_Man/status/877995997846163456&quot;&gt;June 22, 2017&lt;/a&gt;&lt;/blockquote&gt;
-&lt;script async=&quot;&quot; src=&quot;//platform.twitter.com/widgets.js&quot; charset=&quot;utf-8&quot;&gt;&lt;/script&gt;
-
-&lt;p&gt;&lt;img src=&quot;/img/godbolt-swift.jpeg&quot; alt=&quot;godbolt&quot; /&gt;&lt;/p&gt;
+      <summary>&lt;p&gt;The popular compiler explorer tool godbolt&lt;sup id=&quot;fnref:godbolt&quot;&gt;&lt;a href=&quot;#fn:godbolt&quot; class=&quot;footnote&quot;&gt;1&lt;/a&gt;&lt;/sup&gt; has added support for Swift language. Godbolt let’s you enter some code in a browser and shows the assembly output. It shows off the power of the LLVM optimization passes:&lt;/p&gt;
 
 &lt;div class=&quot;footnotes&quot;&gt;
   &lt;ol&gt;
@@ -152,7 +56,8 @@
     &lt;/li&gt;
   &lt;/ol&gt;
 &lt;/div&gt;
-</content>
+</summary>
+      <content type="html"></content>
    </entry>
    
    <entry>
@@ -166,82 +71,21 @@
       <updated>2017-08-02T00:00:00-07:00</updated>
       
 
-      <summary><p>In Swift 3, the default attribute for closures is now <code class="highlighter-rouge">@noescape</code> (with the keyword being deprecated), we now have to specify closures that escape from a function as <code class="highlighter-rouge">@escaping</code>. There is a standard library function <code class="highlighter-rouge">withoutAcutallyEscaping</code> <sup id="fnref:doc"><a href="#fn:doc" class="footnote">1</a></sup> that:</p>
-
-<blockquote>
-  <p>Allows a nonescaping closure to temporarily be used as if it were allowed to escape.</p>
-</blockquote>
-
-<div class="footnotes">
-  <ol>
-    <li id="fn:doc">
-      <p><a href="https://developer.apple.com/documentation/swift/2827967-withoutactuallyescaping">https://developer.apple.com/documentation/swift/2827967-withoutactuallyescaping</a>&nbsp;<a href="#fnref:doc" class="reversefootnote">&#8617;</a></p>
-    </li>
-  </ol>
-</div>
-</summary>
-      <content type="html">&lt;p&gt;In Swift 3, the default attribute for closures is now &lt;code class=&quot;highlighter-rouge&quot;&gt;@noescape&lt;/code&gt; (with the keyword being deprecated), we now have to specify closures that escape from a function as &lt;code class=&quot;highlighter-rouge&quot;&gt;@escaping&lt;/code&gt;. There is a standard library function &lt;code class=&quot;highlighter-rouge&quot;&gt;withoutAcutallyEscaping&lt;/code&gt; &lt;sup id=&quot;fnref:doc&quot;&gt;&lt;a href=&quot;#fn:doc&quot; class=&quot;footnote&quot;&gt;1&lt;/a&gt;&lt;/sup&gt; that:&lt;/p&gt;
+      <summary>&lt;p&gt;In Swift 3, the default attribute for closures is now &lt;code class=&quot;highlighter-rouge&quot;&gt;@noescape&lt;/code&gt; (with the keyword being deprecated), we now have to specify closures that escape from a function as &lt;code class=&quot;highlighter-rouge&quot;&gt;@escaping&lt;/code&gt;. There is a standard library function &lt;code class=&quot;highlighter-rouge&quot;&gt;withoutAcutallyEscaping&lt;/code&gt; &lt;sup id=&quot;fnref:doc&quot;&gt;&lt;a href=&quot;#fn:doc&quot; class=&quot;footnote&quot;&gt;1&lt;/a&gt;&lt;/sup&gt; that:&lt;/p&gt;
 
 &lt;blockquote&gt;
   &lt;p&gt;Allows a nonescaping closure to temporarily be used as if it were allowed to escape.&lt;/p&gt;
 &lt;/blockquote&gt;
 
-&lt;!--excerpt--&gt;
-
-&lt;hr /&gt;
-
-&lt;p&gt;So what does it mean for a closure to “escape” from a function?&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;A closure is said to escape a function when the closure is passed as an argument to the function, but is called after the function returns.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;Stored somewhere else&lt;/li&gt;
-  &lt;li&gt;Used at a later time&lt;/li&gt;
-  &lt;li&gt;Executed asynchronously&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Here’s a sample of a closure that escapes from a function (in this case by executing asynchronously). This is a compile error:&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-swift&quot; data-lang=&quot;swift&quot;&gt;&lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;doSomething&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;f&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; 
-    &lt;span class=&quot;c1&quot;&gt;// error: closure use of non-escaping parameter 'f' may allow it to escape&lt;/span&gt;
-    &lt;span class=&quot;kt&quot;&gt;DispatchQueue&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;async&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;f&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;())&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;doSomething&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;p&gt;There are however valid cases where you don’t want to specify &lt;code class=&quot;highlighter-rouge&quot;&gt;@escaping&lt;/code&gt; in the function type signature because you &lt;em&gt;know&lt;/em&gt; that the block doesn’t actually escape or get copied anywhere else. The Swift stdlib documentation gives an example where a function takes two closures and executes them concurrently &lt;sup id=&quot;fnref:doc:1&quot;&gt;&lt;a href=&quot;#fn:doc&quot; class=&quot;footnote&quot;&gt;1&lt;/a&gt;&lt;/sup&gt;:&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-swift&quot; data-lang=&quot;swift&quot;&gt;&lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;perform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;f&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;simultaneouslyWith&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;g&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;queue&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;DispatchQueue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;label&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;perform&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;attributes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;concurrent&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;queue&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;async&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;execute&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;f&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;queue&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;async&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;execute&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;g&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;queue&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;sync&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;flags&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;barrier&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;c1&quot;&gt;// error: passing non-escaping parameter 'f'...&lt;/span&gt;
-&lt;span class=&quot;c1&quot;&gt;// error: passing non-escaping parameter 'g'...&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;p&gt;This is safe because the &lt;code class=&quot;highlighter-rouge&quot;&gt;.barrier&lt;/code&gt; flag forces the function to wait until both closures have completed executing, so by using the &lt;code class=&quot;highlighter-rouge&quot;&gt;withoutActuallyEscaping&lt;/code&gt;, we can keep the type signature for the function the same but still use the closures internally in an asynchronous manner:&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-swift&quot; data-lang=&quot;swift&quot;&gt;&lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;perform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;f&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;simultaneouslyWith&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;g&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;nf&quot;&gt;withoutActuallyEscaping&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;f&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;escapableF&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-        &lt;span class=&quot;nf&quot;&gt;withoutActuallyEscaping&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;g&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;escapableG&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;queue&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;DispatchQueue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;label&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;perform&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;attributes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;concurrent&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;queue&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;async&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;execute&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;escapableF&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;queue&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;async&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;execute&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;escapableG&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;queue&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;sync&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;flags&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;barrier&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{}&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
 &lt;div class=&quot;footnotes&quot;&gt;
   &lt;ol&gt;
     &lt;li id=&quot;fn:doc&quot;&gt;
-      &lt;p&gt;&lt;a href=&quot;https://developer.apple.com/documentation/swift/2827967-withoutactuallyescaping&quot;&gt;https://developer.apple.com/documentation/swift/2827967-withoutactuallyescaping&lt;/a&gt;&amp;nbsp;&lt;a href=&quot;#fnref:doc&quot; class=&quot;reversefootnote&quot;&gt;&amp;#8617;&lt;/a&gt;&amp;nbsp;&lt;a href=&quot;#fnref:doc:1&quot; class=&quot;reversefootnote&quot;&gt;&amp;#8617;&lt;sup&gt;2&lt;/sup&gt;&lt;/a&gt;&lt;/p&gt;
+      &lt;p&gt;&lt;a href=&quot;https://developer.apple.com/documentation/swift/2827967-withoutactuallyescaping&quot;&gt;https://developer.apple.com/documentation/swift/2827967-withoutactuallyescaping&lt;/a&gt;&amp;nbsp;&lt;a href=&quot;#fnref:doc&quot; class=&quot;reversefootnote&quot;&gt;&amp;#8617;&lt;/a&gt;&lt;/p&gt;
     &lt;/li&gt;
   &lt;/ol&gt;
 &lt;/div&gt;
-</content>
+</summary>
+      <content type="html"></content>
    </entry>
    
    <entry>
@@ -255,17 +99,10 @@
       <updated>2017-07-06T00:00:00-07:00</updated>
       
 
-      <summary><p>When looking at stack traces, or disassembling code you end up with unreadable mangled Swift names like <code class="highlighter-rouge">_T023UITestInstrumentsUITestsAAC11testExampleyyF</code>. Xcode provides a tool to demangle these into the original type signature.</p>
+      <summary>&lt;p&gt;When looking at stack traces, or disassembling code you end up with unreadable mangled Swift names like &lt;code class=&quot;highlighter-rouge&quot;&gt;_T023UITestInstrumentsUITestsAAC11testExampleyyF&lt;/code&gt;. Xcode provides a tool to demangle these into the original type signature.&lt;/p&gt;
 
 </summary>
-      <content type="html">&lt;p&gt;When looking at stack traces, or disassembling code you end up with unreadable mangled Swift names like &lt;code class=&quot;highlighter-rouge&quot;&gt;_T023UITestInstrumentsUITestsAAC11testExampleyyF&lt;/code&gt;. Xcode provides a tool to demangle these into the original type signature.&lt;/p&gt;
-
-&lt;!--excerpt--&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;xcrun swift-demangle _T023UITestInstrumentUITestsAAC11testExampleyyF
-&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;_T023UITestInstrumentUITestsAAC11testExampleyyF ---&amp;gt; UITestInstrumentUITests.UITestInstrumentUITests.testExample &lt;span class=&quot;o&quot;&gt;()&lt;/span&gt; -&amp;gt; &lt;span class=&quot;o&quot;&gt;()&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-</content>
+      <content type="html"></content>
    </entry>
    
 
