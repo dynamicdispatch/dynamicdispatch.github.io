@@ -5,7 +5,7 @@
    <subtitle>Random ObjC, Swift and Xcode fun</subtitle>
    <link href="http://dynamicdispatch.io/feed.xml" rel="self"/>
    <link href="http://dynamicdispatch.io/"/>
-   <updated>2017-09-08T13:38:38-07:00</updated>
+   <updated>2017-09-08T14:16:26-07:00</updated>
    <id>http://dynamicdispatch.io/</id>
    <author>
       <name>dynamicDispatch</name>
@@ -21,7 +21,6 @@
    
    <entry>
       <title>__cxa_throw and fonts</title>
-      <subtitle></subtitle>
       <link href="http://dynamicdispatch.io/blog/cxa-throw-and-fonts/" />
       <id>http://dynamicdispatch.io/blog/cxa-throw-and-fonts</id>
 
@@ -38,7 +37,6 @@
    
    <entry>
       <title>godbolt</title>
-      <subtitle></subtitle>
       <link href="http://dynamicdispatch.io/blog/Godbolt/" />
       <id>http://dynamicdispatch.io/blog/Godbolt</id>
 
@@ -62,7 +60,6 @@
    
    <entry>
       <title>withoutActuallyEscaping</title>
-      <subtitle></subtitle>
       <link href="http://dynamicdispatch.io/blog/withoutActuallyEscaping/" />
       <id>http://dynamicdispatch.io/blog/withoutActuallyEscaping</id>
 
@@ -90,7 +87,6 @@
    
    <entry>
       <title>Demangling Swift Names</title>
-      <subtitle></subtitle>
       <link href="http://dynamicdispatch.io/blog/demangling-swift-names/" />
       <id>http://dynamicdispatch.io/blog/demangling-swift-names</id>
 
