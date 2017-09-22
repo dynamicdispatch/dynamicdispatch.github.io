@@ -5,7 +5,7 @@
    <subtitle>Random ObjC, Swift and Xcode fun</subtitle>
    <link href="http://dynamicdispatch.io/feed.xml" rel="self"/>
    <link href="http://dynamicdispatch.io/"/>
-   <updated>2017-09-08T14:16:26-07:00</updated>
+   <updated>2017-09-22T13:29:21-07:00</updated>
    <id>http://dynamicdispatch.io/</id>
    <author>
       <name>dynamicDispatch</name>
@@ -18,6 +18,28 @@
    <category term="software"/>
    <category term="mobile"/>
 
+   
+   <entry>
+      <title>Objective-C Incompatible Category Definitions</title>
+      <link href="http://dynamicdispatch.io/blog/Objective-C-Incompatible-Category-Definitions/" />
+      <id>http://dynamicdispatch.io/blog/Objective-C-Incompatible-Category-Definitions</id>
+
+      <published>2017-09-22T00:00:00-07:00</published>
+      
+      <updated>2017-09-22T00:00:00-07:00</updated>
+      
+
+      <summary>&lt;p&gt;Working on larger Xcode projects with many dependencies, sometimes a warning like this pops up in the output of &lt;code class=&quot;highlighter-rouge&quot;&gt;xcodebuild&lt;/code&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Some object files have incompatible Objective-C category definitions. Some category metadata may be lost. All files containing Objective-C categories should be built using the same compiler.
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;This post explores what causes this message, and how to figure out where it’s coming from.&lt;/p&gt;
+
+</summary>
+      <content type="html"></content>
+   </entry>
    
    <entry>
       <title>__cxa_throw and fonts</title>

@@ -24,6 +24,7 @@
 <link rel="canonical" href="http://dynamicdispatch.io/" />
 <meta property="og:url" content="http://dynamicdispatch.io/" />
 <meta property="og:site_name" content="dynamicDispatch" />
+<link rel="next" href="http://dynamicdispatch.io/page2">
 <meta name="twitter:card" content="summary" />
 <meta name="twitter:site" content="@_danielbeard" />
 <meta name="twitter:creator" content="@_danielbeard" />
@@ -91,6 +92,24 @@
                <div class="post-list">
 	
 		<article class="post">
+			<h1 class="post-title"><a href="/blog/Objective-C-Incompatible-Category-Definitions/">Objective-C Incompatible Category Definitions</a></h1>
+			<h2 class="post-subtitle"> <small class="post-date">22 Sep 2017</small></h2>
+			
+			<div class="post-excerpt">
+				<p>Working on larger Xcode projects with many dependencies, sometimes a warning like this pops up in the output of <code class="highlighter-rouge">xcodebuild</code>:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>Some object files have incompatible Objective-C category definitions. Some category metadata may be lost. All files containing Objective-C categories should be built using the same compiler.
+</code></pre>
+</div>
+
+<p>This post explores what causes this message, and how to figure out where it’s coming from.</p>
+
+
+				<a href="/blog/Objective-C-Incompatible-Category-Definitions/" class="post-continue">Continue <i class="fa fa-chevron-right"></i></a>
+			</div>
+		</article>
+	
+		<article class="post">
 			<h1 class="post-title"><a href="/blog/cxa-throw-and-fonts/">__cxa_throw and fonts</a></h1>
 			<h2 class="post-subtitle"> <small class="post-date">18 Aug 2017</small></h2>
 			
@@ -144,18 +163,6 @@
 			</div>
 		</article>
 	
-		<article class="post">
-			<h1 class="post-title"><a href="/blog/demangling-swift-names/">Demangling Swift Names</a></h1>
-			<h2 class="post-subtitle"> <small class="post-date">06 Jul 2017</small></h2>
-			
-			<div class="post-excerpt">
-				<p>When looking at stack traces, or disassembling code you end up with unreadable mangled Swift names like <code class="highlighter-rouge">_T023UITestInstrumentsUITestsAAC11testExampleyyF</code>. Xcode provides a tool to demangle these into the original type signature.</p>
-
-
-				<a href="/blog/demangling-swift-names/" class="post-continue">Continue <i class="fa fa-chevron-right"></i></a>
-			</div>
-		</article>
-	
 </div> <!-- post-list -->
 
 <div class="pagination">
@@ -163,7 +170,7 @@
 		<nav>
 			<ul class="pager">
 				<li>
-					<a href="/page" class="btn btn-default disabled">
+					<a href="/page2" class="btn btn-default ">
 					<i class="fa fa-chevron-left"></i> Older
 					</a>
 				</li>
